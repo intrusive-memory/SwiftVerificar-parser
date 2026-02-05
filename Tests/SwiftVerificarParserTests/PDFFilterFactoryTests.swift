@@ -140,11 +140,11 @@ struct PDFFilterFactoryTests {
     @Test("DefaultFilterFactory decode throws for unimplemented filter")
     func defaultFactoryDecodeUnimplemented() {
         let factory = DefaultFilterFactory()
-        // FlateDecode is supported but not yet implemented
+        // CCITTFaxDecode is recognized but not yet implemented
         #expect(throws: (any Error).self) {
             _ = try factory.decode(
                 data: Data([0x01, 0x02]),
-                filterName: .flateDecode,
+                filterName: .ccittFaxDecode,
                 parameters: nil
             )
         }
@@ -153,10 +153,11 @@ struct PDFFilterFactoryTests {
     @Test("DefaultFilterFactory encode throws for unimplemented filter")
     func defaultFactoryEncodeUnimplemented() {
         let factory = DefaultFilterFactory()
+        // CCITTFaxDecode is recognized but not yet implemented
         #expect(throws: (any Error).self) {
             _ = try factory.encode(
                 data: Data([0x01, 0x02]),
-                filterName: .flateDecode,
+                filterName: .ccittFaxDecode,
                 parameters: nil
             )
         }

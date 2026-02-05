@@ -130,7 +130,7 @@ public struct ConcatenatedInputStream<Stream: PDFInputStream>: PDFInputStream, S
         }
         var totalRead = 0
         while totalRead < maxLength, currentStreamIndex < streams.count {
-            var remaining = maxLength - totalRead
+            let remaining = maxLength - totalRead
             var tempBuffer = [UInt8](repeating: 0, count: remaining)
             let bytesRead = try streams[currentStreamIndex].read(&tempBuffer, maxLength: remaining)
             if bytesRead > 0 {

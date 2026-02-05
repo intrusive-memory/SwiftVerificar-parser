@@ -1,21 +1,22 @@
 # SwiftVerificar-parser Progress
 
 ## Current State
-- Last completed sprint: 3
-- Last commit hash: aa5766a
+- Last completed sprint: 4
+- Last commit hash: daf2795
 - Build status: passing
-- Total test count: 556
+- Total test count: 675
 - Cumulative coverage: 98%
 
 ## Completed Sprints
 - Sprint 1: COS Value Types — 4 types, 174 tests (5 suites) ✅
 - Sprint 2: COS Containers — 5 types, 217 tests (5 suites) ✅
 - Sprint 3: Stream Protocols — 8 types, 165 tests (7 suites) ✅
+- Sprint 4: Filter Implementations — 8 types, 119 tests (8 suites) ✅
 
 ## Next Sprint
-- Sprint 4: Filter Implementations
-- Types to create: FlateDecodeFilter, LZWDecodeFilter, ASCII85Filter, ASCIIHexFilter, AESDecryptFilter, RC4DecryptFilter, PredictorFilter, RunLengthFilter
-- Reference: TODO.md Phase 2 (section 2.2)
+- Sprint 5: Document Model
+- Types to create: PDFDocument, COSDocument, XRefTable, etc.
+- Reference: TODO.md Phase 2 (section 2.3)
 
 ## Files Created (cumulative)
 ### Sources
@@ -36,6 +37,14 @@
 - Sources/SwiftVerificarParser/Filter/PDFFilterFactory.swift
 - Sources/SwiftVerificarParser/Filter/DefaultFilterFactory.swift
 - Sources/SwiftVerificarParser/Filter/FilterRegistry.swift
+- Sources/SwiftVerificarParser/Filter/FlateDecodeFilter.swift
+- Sources/SwiftVerificarParser/Filter/LZWDecodeFilter.swift
+- Sources/SwiftVerificarParser/Filter/ASCII85Filter.swift
+- Sources/SwiftVerificarParser/Filter/ASCIIHexFilter.swift
+- Sources/SwiftVerificarParser/Filter/AESDecryptFilter.swift
+- Sources/SwiftVerificarParser/Filter/RC4DecryptFilter.swift
+- Sources/SwiftVerificarParser/Filter/PredictorFilter.swift
+- Sources/SwiftVerificarParser/Filter/RunLengthFilter.swift
 
 ### Tests
 - Tests/SwiftVerificarParserTests/ASAtomTests.swift
@@ -55,6 +64,14 @@
 - Tests/SwiftVerificarParserTests/SeekableStreamTests.swift
 - Tests/SwiftVerificarParserTests/PDFFilterFactoryTests.swift
 - Tests/SwiftVerificarParserTests/FilterRegistryTests.swift
+- Tests/SwiftVerificarParserTests/FlateDecodeFilterTests.swift
+- Tests/SwiftVerificarParserTests/LZWDecodeFilterTests.swift
+- Tests/SwiftVerificarParserTests/ASCII85FilterTests.swift
+- Tests/SwiftVerificarParserTests/ASCIIHexFilterTests.swift
+- Tests/SwiftVerificarParserTests/AESDecryptFilterTests.swift
+- Tests/SwiftVerificarParserTests/RC4DecryptFilterTests.swift
+- Tests/SwiftVerificarParserTests/PredictorFilterTests.swift
+- Tests/SwiftVerificarParserTests/RunLengthFilterTests.swift
 
 ## Cross-Package Needs
 - (none)

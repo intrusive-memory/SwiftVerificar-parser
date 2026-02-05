@@ -258,6 +258,10 @@ public struct ASAtom: Sendable, Hashable, Comparable, Codable, CustomStringConve
     public static let columns = ASAtom("Columns")
     /// The "Predictor" name.
     public static let predictor = ASAtom("Predictor")
+    /// The "Colors" name.
+    public static let colors = ASAtom("Colors")
+    /// The "EarlyChange" name.
+    public static let earlyChange = ASAtom("EarlyChange")
     /// The "N" name.
     public static let n = ASAtom("N")
     /// The "W" name (used in XRef streams for field widths).
