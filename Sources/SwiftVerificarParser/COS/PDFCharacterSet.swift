@@ -284,4 +284,12 @@ public enum PDFCharacterSet: Sendable {
     public static func isOctalDigit(_ byte: UInt8) -> Bool {
         byte >= 0x30 && byte <= 0x37
     }
+
+    /// Whether the byte is an ASCII alphabetic character (a-z, A-Z).
+    ///
+    /// - Parameter byte: The byte to check.
+    /// - Returns: `true` if the byte is an ASCII letter.
+    public static func isAlphabetic(_ byte: UInt8) -> Bool {
+        (byte >= 0x41 && byte <= 0x5A) || (byte >= 0x61 && byte <= 0x7A)
+    }
 }
