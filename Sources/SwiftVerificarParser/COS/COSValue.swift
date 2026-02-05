@@ -58,6 +58,9 @@ public enum COSValue: Sendable, Hashable, CustomStringConvertible {
     /// A PDF dictionary (name-keyed map of values).
     case dictionary([ASAtom: COSValue])
 
+    /// An indirect object reference.
+    case reference(COSReference)
+
     // MARK: - Type Checking
 
     /// Whether this value is `null`.
@@ -110,6 +113,12 @@ public enum COSValue: Sendable, Hashable, CustomStringConvertible {
     /// Whether this value is a dictionary.
     public var isDictionary: Bool {
         if case .dictionary = self { return true }
+        return false
+    }
+
+    /// Whether this value is a reference.
+    public var isReference: Bool {
+        if case .reference = self { return true }
         return false
     }
 
@@ -174,6 +183,12 @@ public enum COSValue: Sendable, Hashable, CustomStringConvertible {
     /// Extracts the dictionary, if this is a `.dictionary` case.
     public var dictionaryValue: [ASAtom: COSValue]? {
         if case .dictionary(let v) = self { return v }
+        return nil
+    }
+
+    /// Extracts the reference, if this is a `.reference` case.
+    public var referenceValue: COSReference? {
+        if case .reference(let v) = self { return v }
         return nil
     }
 
@@ -271,6 +286,8 @@ public enum COSValue: Sendable, Hashable, CustomStringConvertible {
                 .map { "\($0.key) \($0.value)" }
                 .joined(separator: " ")
             return "<<\(entries)>>"
+        case .reference(let ref):
+            return ref.description
         }
     }
 }
@@ -287,7 +304,7 @@ extension COSValue: Codable {
 
     /// Type discriminator values for Codable encoding.
     private enum TypeTag: String, Codable {
-        case null, boolean, integer, real, string, name, array, dictionary
+        case null, boolean, integer, real, string, name, array, dictionary, reference
     }
 
     public init(from decoder: Decoder) throws {
@@ -320,6 +337,8 @@ extension COSValue: Codable {
                 }
             }
             self = .dictionary(dict)
+        case .reference:
+            self = .reference(try container.decode(COSReference.self, forKey: .value))
         }
     }
 
@@ -353,6 +372,9 @@ extension COSValue: Codable {
                 [entry.key.stringValue: entry.value]
             }
             try container.encode(pairs, forKey: .value)
+        case .reference(let ref):
+            try container.encode(TypeTag.reference, forKey: .type)
+            try container.encode(ref, forKey: .value)
         }
     }
 }
@@ -453,6 +475,9 @@ extension COSValue {
                 hasher.combine(key)
                 hasher.combine(dict[key])
             }
+        case .reference(let ref):
+            hasher.combine(8)
+            hasher.combine(ref)
         }
     }
 }
