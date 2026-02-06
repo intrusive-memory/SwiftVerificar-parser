@@ -164,6 +164,15 @@ public enum PDError: Error, Sendable, Equatable, CustomStringConvertible {
     /// Invalid document structure.
     case invalidDocument(reason: String)
 
+    /// Invalid color space definition.
+    case invalidColorSpace
+
+    /// Unsupported color space type.
+    case unsupportedColorSpace(String)
+
+    /// Invalid number of color components.
+    case invalidColorComponents(expected: Int, got: Int)
+
     public var description: String {
         switch self {
         case .missingRequiredEntry(let key):
@@ -180,6 +189,12 @@ public enum PDError: Error, Sendable, Equatable, CustomStringConvertible {
             return "Invalid page tree: \(reason)"
         case .invalidDocument(let reason):
             return "Invalid document: \(reason)"
+        case .invalidColorSpace:
+            return "Invalid color space definition"
+        case .unsupportedColorSpace(let name):
+            return "Unsupported color space: \(name)"
+        case .invalidColorComponents(let expected, let got):
+            return "Invalid number of color components: expected \(expected), got \(got)"
         }
     }
 }

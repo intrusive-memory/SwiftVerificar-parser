@@ -188,6 +188,16 @@ public struct ASAtom: Sendable, Hashable, Comparable, Codable, CustomStringConve
     public static let deviceN = ASAtom("DeviceN")
     /// The "Pattern" name.
     public static let pattern = ASAtom("Pattern")
+    /// The "WhitePoint" name (for calibrated color spaces).
+    public static let whitePoint = ASAtom("WhitePoint")
+    /// The "BlackPoint" name (for calibrated color spaces).
+    public static let blackPoint = ASAtom("BlackPoint")
+    /// The "Gamma" name (for calibrated color spaces).
+    public static let gamma = ASAtom("Gamma")
+    /// The "Range" name (for Lab and other color spaces).
+    public static let range = ASAtom("Range")
+    /// The "Alternate" name (for ICC-based and special color spaces).
+    public static let alternate = ASAtom("Alternate")
 
     // XObjects
     /// The "XObject" name.
