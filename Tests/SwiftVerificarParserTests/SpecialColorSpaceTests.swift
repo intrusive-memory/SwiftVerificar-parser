@@ -213,33 +213,33 @@ struct SpecialColorSpaceTests {
 
     @Test("Separation color space")
     func separation() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.separation),
-            .name(ASAtom("PANTONE 185 CV"),
+            .name(ASAtom("PANTONE 185 CV")),
             .name(.deviceCMYK),
             .reference(COSReference(objectNumber: 10, generation: 0))
-        ]
+        ])
 
         let separation = try SeparationColorSpace(cosObject: array)
 
         #expect(separation.name == .separation)
         #expect(separation.numberOfComponents == 1)
-        #expect(separation.colorantName == ..name(ASAtom("PANTONE 185 CV"))
+        #expect(separation.colorantName == ASAtom("PANTONE 185 CV"))
         #expect(separation.alternateColorSpace is DeviceCMYKColorSpace)
     }
 
     @Test("Separation with /All colorant")
     func separationAll() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.separation),
-            .name(ASAtom("All"),
+            .name(ASAtom("All")),
             .name(.deviceGray),
             .reference(COSReference(objectNumber: 10, generation: 0))
-        ]
+        ])
 
         let separation = try SeparationColorSpace(cosObject: array)
 
-        #expect(separation.colorantName == ..name(ASAtom("All"))
+        #expect(separation.colorantName == ASAtom("All"))
 
         // Tint 1.0 should produce black
         let rgb = try separation.toRGB([1.0])
@@ -250,12 +250,12 @@ struct SpecialColorSpaceTests {
 
     @Test("Separation with /None colorant")
     func separationNone() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.separation),
-            .name(ASAtom("None"),
+            .name(ASAtom("None")),
             .name(.deviceGray),
             .reference(COSReference(objectNumber: 10, generation: 0))
-        ]
+        ])
 
         let separation = try SeparationColorSpace(cosObject: array)
 
@@ -268,12 +268,12 @@ struct SpecialColorSpaceTests {
 
     @Test("Separation approximates tint conversion")
     func separationTint() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.separation),
-            .name(ASAtom("MyColor"),
+            .name(ASAtom("MyColor")),
             .name(.deviceRGB),
             .reference(COSReference(objectNumber: 10, generation: 0))
-        ]
+        ])
 
         let separation = try SeparationColorSpace(cosObject: array)
 
@@ -292,30 +292,30 @@ struct SpecialColorSpaceTests {
 
     @Test("DeviceN color space")
     func deviceN() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.deviceN),
-            [.name(ASAtom("Cyan"), .name(ASAtom("Magenta")],
+            .array([.name(ASAtom("Cyan")), .name(ASAtom("Magenta"))]),
             .name(.deviceCMYK),
             .reference(COSReference(objectNumber: 11, generation: 0))
-        ]
+        ])
 
         let deviceN = try DeviceNColorSpace(cosObject: array)
 
         #expect(deviceN.name == .deviceN)
         #expect(deviceN.numberOfComponents == 2)
         #expect(deviceN.colorantNames.count == 2)
-        #expect(deviceN.colorantNames[0] == ..name(ASAtom("Cyan"))
-        #expect(deviceN.colorantNames[1] == ..name(ASAtom("Magenta"))
+        #expect(deviceN.colorantNames[0] == ASAtom("Cyan"))
+        #expect(deviceN.colorantNames[1] == ASAtom("Magenta"))
     }
 
     @Test("DeviceN with CMYK colorants")
     func deviceNCMYK() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.deviceN),
-            [.name(ASAtom("Cyan"), .name(ASAtom("Magenta"), .name(ASAtom("Yellow"), .name(ASAtom("Black")],
+            .array([.name(ASAtom("Cyan")), .name(ASAtom("Magenta")), .name(ASAtom("Yellow")), .name(ASAtom("Black"))]),
             .name(.deviceCMYK),
             .reference(COSReference(objectNumber: 11, generation: 0))
-        ]
+        ])
 
         let deviceN = try DeviceNColorSpace(cosObject: array)
 
@@ -330,16 +330,16 @@ struct SpecialColorSpaceTests {
 
     @Test("DeviceN with attributes")
     func deviceNWithAttributes() throws {
-        let attrs: COSValue = [
-            .name(ASAtom("Subtype"): .name(ASAtom("DeviceN")
-        ]
-        let array: COSValue = [
+        let attrs: COSValue = .dictionary([
+            ASAtom("Subtype"): .name(ASAtom("DeviceN"))
+        ])
+        let array: COSValue = .array([
             .name(.deviceN),
-            [.name(ASAtom("Orange"), .name(ASAtom("Green")],
+            .array([.name(ASAtom("Orange")), .name(ASAtom("Green"))]),
             .name(.deviceRGB),
             .reference(COSReference(objectNumber: 11, generation: 0)),
             attrs
-        ]
+        ])
 
         let deviceN = try DeviceNColorSpace(cosObject: array)
 
@@ -348,12 +348,12 @@ struct SpecialColorSpaceTests {
 
     @Test("DeviceN approximates tint conversion")
     func deviceNTint() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.deviceN),
-            [.name(ASAtom("Color1"), .name(ASAtom("Color2")],
+            .array([.name(ASAtom("Color1")), .name(ASAtom("Color2"))]),
             .name(.deviceRGB),
             .reference(COSReference(objectNumber: 11, generation: 0))
-        ]
+        ])
 
         let deviceN = try DeviceNColorSpace(cosObject: array)
 
@@ -364,12 +364,12 @@ struct SpecialColorSpaceTests {
 
     @Test("DeviceN throws for empty colorant list")
     func deviceNEmptyColorants() {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.deviceN),
-            [],  // Empty colorant list
+            .array([]),  // Empty colorant list
             .name(.deviceRGB),
             .reference(COSReference(objectNumber: 11, generation: 0))
-        ]
+        ])
 
         #expect(throws: PDError.invalidColorSpace) {
             _ = try DeviceNColorSpace(cosObject: array)

@@ -143,12 +143,12 @@ struct PDFColorSpaceTests {
 
     @Test("Create DeviceN from array")
     func createDeviceNFromArray() throws {
-        let array: COSValue = [
+        let array: COSValue = .array([
             .name(.deviceN),
-            [ASAtom("Cyan"), ASAtom("Magenta"), ASAtom("Yellow"), ASAtom("Black")],
+            .array([.name(ASAtom("Cyan")), .name(ASAtom("Magenta")), .name(ASAtom("Yellow")), .name(ASAtom("Black"))]),
             .name(.deviceCMYK),
-            .reference(COSReference(objectNumber: 11, generationNumber: 0))  // Function
-        ]
+            .reference(COSReference(objectNumber: 11, generation: 0))  // Function
+        ])
 
         let colorSpace = try PDFColorSpaceFactory.create(from: array)
 
@@ -161,7 +161,7 @@ struct PDFColorSpaceTests {
     func unsupportedColorSpace() throws {
         let unknownName = ASAtom("UnknownColorSpace")
 
-        #expect(throws: PDError.unsupportedColorSpace(unknownName.value)) {
+        #expect(throws: PDError.unsupportedColorSpace(unknownName.stringValue)) {
             _ = try PDFColorSpaceFactory.create(from: .name(unknownName))
         }
     }

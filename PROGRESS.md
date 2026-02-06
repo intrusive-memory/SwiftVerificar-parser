@@ -1,10 +1,10 @@
 # SwiftVerificar-parser Progress
 
 ## Current State
-- Last completed sprint: 12
+- Last completed sprint: 13
 - Last commit hash: [pending]
 - Build status: passing
-- Total test count: 2100+
+- Total test count: 2500+
 - Cumulative coverage: 88%+
 
 ## Completed Sprints
@@ -20,9 +20,10 @@
 - Sprint 10: Content Streams — 4 types, 181 tests (4 suites) ✅
 - Sprint 11: Text Extraction — 4 types, 320+ tests (4 suites), 94%+ coverage ✅
 - Sprint 12: Color Spaces — 11 types, 200+ tests (4 suites) ✅
+- Sprint 13: Structure Tree — 6 types, 400+ tests (6 suites) ✅
 
 ## Next Sprint
-- Sprint 13: XObjects and Patterns
+- Sprint 14: XObjects and Patterns
 - Types to create: PDFXObject, ImageXObject, FormXObject, PDFPattern
 - Reference: TODO.md Phase 7
 
@@ -99,6 +100,12 @@
 - Sources/SwiftVerificarParser/PD/ColorSpace/SeparationColorSpace.swift
 - Sources/SwiftVerificarParser/PD/ColorSpace/DeviceNColorSpace.swift
 - Sources/SwiftVerificarParser/PD/ColorSpace/PatternColorSpace.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDStructTreeRoot.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDStructElement.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDMarkedContent.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDRoleMap.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDClassMap.swift
+- Sources/SwiftVerificarParser/PD/Structure/PDAttributeObject.swift
 
 ### Tests
 - Tests/SwiftVerificarParserTests/ASAtomTests.swift
@@ -163,6 +170,11 @@
 - Tests/SwiftVerificarParserTests/DeviceColorSpaceTests.swift
 - Tests/SwiftVerificarParserTests/CalibratedColorSpaceTests.swift
 - Tests/SwiftVerificarParserTests/SpecialColorSpaceTests.swift
+- Tests/SwiftVerificarParserTests/PDStructTreeRootTests.swift
+- Tests/SwiftVerificarParserTests/PDStructElementTests.swift
+- Tests/SwiftVerificarParserTests/PDMarkedContentTests.swift
+- Tests/SwiftVerificarParserTests/PDRoleMapTests.swift
+- Tests/SwiftVerificarParserTests/PDClassMapAndAttributeTests.swift
 
 ## Cross-Package Needs
 - (none)
