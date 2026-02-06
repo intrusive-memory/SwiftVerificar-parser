@@ -1,11 +1,11 @@
 # SwiftVerificar-parser Progress
 
 ## Current State
-- Last completed sprint: 10
+- Last completed sprint: 11
 - Last commit hash: [pending]
 - Build status: passing
-- Total test count: 1581+
-- Cumulative coverage: 80%+
+- Total test count: 1900+
+- Cumulative coverage: 88%+
 
 ## Completed Sprints
 - Sprint 1: COS Value Types — 4 types, 174 tests (5 suites) ✅
@@ -18,9 +18,10 @@
 - Sprint 8: PD Layer Document Model — 7 types, 135 tests (7 suites) ✅
 - Sprint 9: Font System — 8 types, 265+ tests (8 suites) ✅
 - Sprint 10: Content Streams — 4 types, 181 tests (4 suites) ✅
+- Sprint 11: Text Extraction — 4 types, 320+ tests (4 suites), 94%+ coverage ✅
 
 ## Next Sprint
-- Sprint 11: Color Spaces
+- Sprint 12: Color Spaces
 - Types to create: PDFColorSpace protocol, DeviceGray/RGB/CMYK, etc.
 - Reference: TODO.md Phase 6
 
@@ -81,6 +82,10 @@
 - Sources/SwiftVerificarParser/PD/Font/TrueTypeFont.swift
 - Sources/SwiftVerificarParser/PD/Font/Type0Font.swift
 - Sources/SwiftVerificarParser/PD/Font/CIDFont.swift
+- Sources/SwiftVerificarParser/PD/TextPosition.swift
+- Sources/SwiftVerificarParser/PD/TextLine.swift
+- Sources/SwiftVerificarParser/PD/TextBlock.swift
+- Sources/SwiftVerificarParser/PD/PDFTextStripper.swift
 
 ### Tests
 - Tests/SwiftVerificarParserTests/ASAtomTests.swift
@@ -137,6 +142,10 @@
 - Tests/SwiftVerificarParserTests/GraphicsStateTests.swift
 - Tests/SwiftVerificarParserTests/TextStateTests.swift
 - Tests/SwiftVerificarParserTests/ContentStreamParserTests.swift
+- Tests/SwiftVerificarParserTests/TextPositionTests.swift
+- Tests/SwiftVerificarParserTests/TextLineTests.swift
+- Tests/SwiftVerificarParserTests/TextBlockTests.swift
+- Tests/SwiftVerificarParserTests/PDFTextStripperTests.swift
 
 ## Cross-Package Needs
 - (none)
