@@ -94,7 +94,7 @@ struct CalibratedColorSpaceTests {
         let dict: COSValue = [:]
         let array: COSValue = [.name(.calGray), dict]
 
-        #expect(throws: PDError.missingRequiredEntry("WhitePoint")) {
+        #expect(throws: PDError.missingRequiredEntry(key: "WhitePoint")) {
             _ = try CalGrayColorSpace(cosObject: array)
         }
     }
@@ -298,7 +298,7 @@ struct CalibratedColorSpaceTests {
         let dict: COSValue = [:]
         let array: COSValue = [.name(.lab), dict]
 
-        #expect(throws: PDError.missingRequiredEntry("WhitePoint")) {
+        #expect(throws: PDError.missingRequiredEntry(key: "WhitePoint")) {
             _ = try LabColorSpace(cosObject: array)
         }
     }
