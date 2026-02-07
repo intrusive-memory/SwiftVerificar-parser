@@ -226,18 +226,20 @@ public final class PDFDocumentParser: COSParser {
 
         // Extract the offset number that follows
         let afterStartxref = searchString[startxrefRange.upperBound...]
-        let lines = afterStartxref.split(separator: "\n", maxSplits: 2, omittingEmptySubsequences: false)
+        let lines = afterStartxref.split(separator: "\n", omittingEmptySubsequences: true)
 
-        guard lines.count >= 2 else {
-            throw DocumentError.invalidStartXRef
+        // Find the first non-empty line containing the offset number
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { continue }
+            if let offset = Int64(trimmed) {
+                return offset
+            }
+            // If the first non-empty line is not a number (e.g., %%EOF), break
+            break
         }
 
-        let offsetLine = lines[0].trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let offset = Int64(offsetLine) else {
-            throw DocumentError.invalidStartXRef
-        }
-
-        return offset
+        throw DocumentError.invalidStartXRef
     }
 
     // MARK: - XRef and Trailer Parsing

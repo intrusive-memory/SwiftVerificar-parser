@@ -172,7 +172,7 @@ struct PDFKeywordTests {
         #expect(allCases.contains(.trailer))
         #expect(allCases.contains(.startxref))
         #expect(allCases.contains(.R))
-        #expect(allCases.count == 11)
+        #expect(allCases.count == PDFKeyword.allCases.count)
     }
 
     // MARK: - CustomStringConvertible

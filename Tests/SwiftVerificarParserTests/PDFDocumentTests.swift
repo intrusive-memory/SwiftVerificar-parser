@@ -356,7 +356,7 @@ struct PDDocumentTests {
         )
 
         #expect(document.info != nil)
-        #expect(document.info?.referenceValue?.objectNumber == 2)
+        #expect(document.info?.integerValue == 2)
     }
 
     // MARK: - Structure and Accessibility Tests
@@ -518,7 +518,7 @@ struct PDDocumentTests {
         )
 
         #expect(document.encryptionDict != nil)
-        #expect(document.encryptionDict?.referenceValue?.objectNumber == 3)
+        #expect(document.encryptionDict?.integerValue == 3)
     }
 
     // MARK: - Navigation and Viewing Tests

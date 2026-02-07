@@ -288,12 +288,15 @@ struct PDFTokenizerTests {
 
     @Test("Tokenize nested structures")
     func tokenizeNestedStructures() async throws {
+        // Tokens: [ << /Key /Value >> [ 1 2 ] ]
+        // Index:  0  1   2     3    4  5 6 7 8 9
         let tokens = try await tokenize("[ << /Key /Value >> [ 1 2 ] ]")
+        #expect(tokens.count == 10)
         #expect(tokens[0] == .arrayStart)
         #expect(tokens[1] == .dictionaryStart)
-        #expect(tokens[6] == .arrayStart)
+        #expect(tokens[5] == .arrayStart)
+        #expect(tokens[8] == .arrayEnd)
         #expect(tokens[9] == .arrayEnd)
-        #expect(tokens[10] == .arrayEnd)
     }
 
     // MARK: - Edge Cases

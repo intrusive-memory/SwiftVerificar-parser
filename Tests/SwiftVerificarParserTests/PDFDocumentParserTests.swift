@@ -100,21 +100,8 @@ struct PDFDocumentParserTests {
 
     @Test("Find startxref offset")
     func findStartxrefOffset() async throws {
-        let pdfData = Data("""
-        %PDF-1.7
-        1 0 obj
-        << /Type /Catalog >>
-        endobj
-        xref
-        0 2
-        0000000000 65535 f
-        0000000009 00000 n
-        trailer
-        << /Size 2 /Root 1 0 R >>
-        startxref
-        42
-        %%EOF
-        """.utf8)
+        let pdfString = "%PDF-1.7\nstartxref\n42\n%%EOF\n"
+        let pdfData = Data(pdfString.utf8)
 
         let stream = DataInputStream(data: pdfData)
         let offset = try await PDFDocumentParser.findStartXRef(in: stream)
@@ -123,14 +110,8 @@ struct PDFDocumentParserTests {
 
     @Test("Find startxref with larger offset")
     func findStartxrefWithLargerOffset() async throws {
-        let pdfData = Data("""
-        %PDF-1.7
-        trailer
-        << /Size 100 /Root 1 0 R >>
-        startxref
-        123456
-        %%EOF
-        """.utf8)
+        let pdfString = "%PDF-1.7\nstartxref\n123456\n%%EOF\n"
+        let pdfData = Data(pdfString.utf8)
 
         let stream = DataInputStream(data: pdfData)
         let offset = try await PDFDocumentParser.findStartXRef(in: stream)
