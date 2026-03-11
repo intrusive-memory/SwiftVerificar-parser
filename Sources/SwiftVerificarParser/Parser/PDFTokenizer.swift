@@ -167,6 +167,14 @@ public struct PDFTokenizer: Sendable {
         case 0x2F: // /
             return try await readName()
 
+        case 0x27: // ' (single-quote — PDF text operator)
+            _ = try await readByte()
+            return .keyword(.quote)
+
+        case 0x22: // " (double-quote — PDF text operator)
+            _ = try await readByte()
+            return .keyword(.doubleQuote)
+
         case 0x2B, 0x2D, 0x2E, 0x30...0x39: // +, -, ., 0-9
             return try await readNumber()
 
