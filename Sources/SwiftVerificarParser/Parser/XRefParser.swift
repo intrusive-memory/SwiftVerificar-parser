@@ -124,12 +124,8 @@ public struct XRefParser: Sendable {
             throw ParseError.invalidSubsectionHeader
         }
 
-        // Parse the trailer dictionary
-        let trailerKeyword = try await readKeyword()
-        guard trailerKeyword == "trailer" else {
-            throw ParseError.invalidTrailer
-        }
-
+        // The "trailer" keyword was already consumed by parseSubsection() when it
+        // detected the end of subsections. Parse the trailer dictionary directly.
         let trailerDict = try await parseTrailerDictionary()
         let trailer = PDFTrailer(dictionary: trailerDict)
 
@@ -207,14 +203,21 @@ public struct XRefParser: Sendable {
         }
     }
 
-    /// Parses a trailer dictionary.
+    /// Parses a trailer dictionary using the COS dictionary parser.
     ///
-    /// For simplicity, this is a placeholder that returns an empty dictionary.
-    /// A full implementation would use a COS dictionary parser.
+    /// Creates a tokenizer at the current stream position and delegates to
+    /// `ObjectParser` to parse the `<< ... >>` dictionary that follows the
+    /// `trailer` keyword.
     private mutating func parseTrailerDictionary() async throws -> [ASAtom: COSValue] {
-        // TODO: Implement full dictionary parsing
-        // For now, return a minimal dictionary
-        return [:]
+        var tokenizer = PDFTokenizer(stream: stream)
+        let parser = ObjectParser()
+        let value = try await parser.parseObject(&tokenizer)
+
+        guard let dict = value.dictionaryValue else {
+            throw ParseError.invalidTrailer
+        }
+
+        return dict
     }
 
     // MARK: - Stream Reading Helpers

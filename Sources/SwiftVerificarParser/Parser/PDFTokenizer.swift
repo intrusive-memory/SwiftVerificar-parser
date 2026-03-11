@@ -86,9 +86,28 @@ public struct PDFTokenizer: Sendable {
     /// The input stream to tokenize.
     private var stream: any SeekableStream
 
-    /// The current position in the stream.
+    /// The current position in the stream (internal use).
     private var position: Int64 {
         stream.position
+    }
+
+    /// The current byte offset of the tokenizer within the stream.
+    ///
+    /// This is useful when higher-level parsers need to read raw bytes
+    /// (e.g., PDF stream data) from the same underlying data source.
+    public var currentPosition: Int64 {
+        stream.position
+    }
+
+    /// Repositions the tokenizer's internal stream to the specified byte offset.
+    ///
+    /// This is used after reading raw bytes from a separate stream handle,
+    /// to advance the tokenizer past data that was consumed externally
+    /// (e.g., PDF stream content between `stream` and `endstream` keywords).
+    ///
+    /// - Parameter position: The byte offset to seek to.
+    public mutating func seek(to position: Int64) throws {
+        try stream.seek(to: position)
     }
 
     // MARK: - Initialization

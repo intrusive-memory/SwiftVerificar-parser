@@ -165,18 +165,35 @@ public struct ObjectParser: Sendable {
     /// Parses an integer or checks if it's the start of an indirect reference.
     ///
     /// In PDF syntax, integers can appear standalone or as part of a reference (N G R).
-    /// This method needs to lookahead to determine which case applies.
-    ///
-    /// Note: This implementation has a limitation - if we see "N M" where M is not
-    /// followed by R, we cannot return just N because we've already consumed M.
-    /// A production parser would need either backtracking or a token buffer.
-    /// For now, we'll only recognize the pattern "N G R" as a reference.
+    /// This method uses lookahead with backtracking: it saves the tokenizer's position,
+    /// reads ahead to check for the generation-number + R pattern, and restores the
+    /// position if the pattern doesn't match.
     private func parseIntegerOrReference(_ objectNumber: Int64, tokenizer: inout PDFTokenizer) async throws -> COSValue {
-        // In a simple implementation, we just return the integer.
-        // References will be parsed by higher-level code that expects them.
-        // This is a design tradeoff - we're simplifying by not handling
-        // the full lookahead here.
-        return .integer(objectNumber)
+        // Save position for backtracking
+        let savedPosition = tokenizer.currentPosition
+
+        // Try to read generation number
+        guard let genToken = try await tokenizer.nextToken(),
+              let generationNumber = genToken.asInteger else {
+            // Not followed by another integer — restore and return as plain integer
+            try tokenizer.seek(to: savedPosition)
+            return .integer(objectNumber)
+        }
+
+        // Try to read 'R' keyword
+        guard let rToken = try await tokenizer.nextToken(),
+              case .keyword(.R) = rToken else {
+            // Not followed by R — restore and return as plain integer
+            try tokenizer.seek(to: savedPosition)
+            return .integer(objectNumber)
+        }
+
+        // Successfully matched N G R pattern
+        let ref = COSReference(
+            objectNumber: Int(objectNumber),
+            generation: Int(generationNumber)
+        )
+        return .reference(ref)
     }
 
     /// Parses an indirect reference (N G R).
@@ -321,10 +338,34 @@ public struct ObjectParser: Sendable {
             throw ParserError.invalidStreamObject("Stream dictionary must have /Length entry")
         }
 
-        // Read stream data
-        // In a real implementation, we'd read exactly 'length' bytes from the stream
-        // For now, we'll create a placeholder
-        let streamData = Data() // TODO: Read length bytes from stream
+        // Read stream data from the underlying seekable stream.
+        // After the tokenizer consumed the 'stream' keyword, its position is right
+        // after the keyword text. Per PDF spec (7.3.8.1), the keyword must be followed
+        // by a single end-of-line marker (CR, LF, or CRLF) before the data begins.
+        var rawStream = stream
+        let afterKeywordPos = tokenizer.currentPosition
+        try rawStream.seek(to: afterKeywordPos)
+
+        // Skip the required EOL after the 'stream' keyword
+        if let eolByte = try rawStream.readByte() {
+            if eolByte == 0x0D { // CR — check for CRLF
+                if let nextByte = try rawStream.peek(), nextByte == 0x0A {
+                    _ = try rawStream.readByte() // consume LF
+                }
+            } else if eolByte != 0x0A { // not LF either — tolerate missing EOL
+                try rawStream.seek(to: afterKeywordPos)
+            }
+        }
+
+        // Read exactly 'length' bytes of stream data
+        let dataStartPos = rawStream.position
+        let bytesToRead = Int(length)
+        var buffer = [UInt8](repeating: 0, count: bytesToRead)
+        let bytesRead = try rawStream.read(&buffer, maxLength: bytesToRead)
+        let streamData = Data(buffer.prefix(bytesRead))
+
+        // Advance the tokenizer past the stream data so it can find 'endstream'
+        try tokenizer.seek(to: dataStartPos + Int64(bytesRead))
 
         // Expect 'endstream' keyword
         guard let endstreamToken = try await tokenizer.nextToken(),

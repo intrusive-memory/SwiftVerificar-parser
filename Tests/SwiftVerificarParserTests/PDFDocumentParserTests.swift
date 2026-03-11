@@ -8,19 +8,20 @@ struct PDFDocumentParserTests {
 
     // MARK: - Helper Methods
 
-    /// Creates a minimal valid PDF document as Data.
+    /// Creates a minimal valid PDF document as Data with correct byte offsets.
     func createMinimalPDF() -> Data {
         var pdf = Data()
 
         // Header
         pdf.append("%PDF-1.7\n".data(using: .utf8)!)
 
-        // Object 1: Catalog
+        // Track object offsets for the xref table
+        let obj1Offset = pdf.count
         pdf.append("1 0 obj\n".data(using: .utf8)!)
         pdf.append("<< /Type /Catalog /Pages 2 0 R >>\n".data(using: .utf8)!)
         pdf.append("endobj\n".data(using: .utf8)!)
 
-        // Object 2: Pages
+        let obj2Offset = pdf.count
         pdf.append("2 0 obj\n".data(using: .utf8)!)
         pdf.append("<< /Type /Pages /Count 0 /Kids [] >>\n".data(using: .utf8)!)
         pdf.append("endobj\n".data(using: .utf8)!)
@@ -28,12 +29,12 @@ struct PDFDocumentParserTests {
         // Save xref position
         let xrefPosition = pdf.count
 
-        // Cross-reference table
+        // Cross-reference table with dynamically computed offsets
         pdf.append("xref\n".data(using: .utf8)!)
         pdf.append("0 3\n".data(using: .utf8)!)
         pdf.append("0000000000 65535 f \n".data(using: .utf8)!)
-        pdf.append("0000000009 00000 n \n".data(using: .utf8)!)
-        pdf.append("0000000074 00000 n \n".data(using: .utf8)!)
+        pdf.append(String(format: "%010d 00000 n \n", obj1Offset).data(using: .utf8)!)
+        pdf.append(String(format: "%010d 00000 n \n", obj2Offset).data(using: .utf8)!)
 
         // Trailer
         pdf.append("trailer\n".data(using: .utf8)!)
@@ -136,32 +137,42 @@ struct PDFDocumentParserTests {
 
     // MARK: - Document Parser Integration Tests
 
-    @Test("Parse minimal PDF document", .disabled("Requires full integration"))
+    @Test("Parse minimal PDF document")
     func parseMinimalPDFDocument() async throws {
         let pdfData = createMinimalPDF()
         let stream = DataInputStream(data: pdfData)
 
-        // This test is disabled because it requires full parsing integration
-        // including proper byte offset tracking in createMinimalPDF
-        // Enable once the full parser is working end-to-end
-
-        // let parser = try await PDFDocumentParser(stream: stream)
-        // #expect(parser.header.version == "1.7")
-        // #expect(parser.trailer.size == 3)
+        let parser = try await PDFDocumentParser(stream: stream)
+        #expect(parser.header.versionString == "1.7")
+        #expect(parser.trailer.size == 3)
     }
 
     // MARK: - Object Retrieval Tests
 
-    @Test("getObject retrieves cached object", .disabled("Requires full integration"))
+    @Test("getObject retrieves cached object")
     func getObjectRetrievesCachedObject() async throws {
-        // This would require a fully constructed parser with objects
-        // Disabled until full integration is complete
+        let pdfData = createMinimalPDF()
+        let stream = DataInputStream(data: pdfData)
+        let parser = try await PDFDocumentParser(stream: stream)
+
+        // Object 1 should be the catalog dictionary
+        let key = COSObjectKey(objectNumber: 1, generation: 0)
+        let value = try await parser.getObject(key: key)
+        #expect(value != nil)
+        #expect(value?.isDictionary == true)
+        #expect(value?.dictionaryValue?[.type]?.nameValue == ASAtom("Catalog"))
     }
 
-    @Test("getObject returns nil for missing object", .disabled("Requires full integration"))
+    @Test("getObject returns nil for missing object")
     func getObjectReturnsNilForMissingObject() async throws {
-        // This would require a fully constructed parser
-        // Disabled until full integration is complete
+        let pdfData = createMinimalPDF()
+        let stream = DataInputStream(data: pdfData)
+        let parser = try await PDFDocumentParser(stream: stream)
+
+        // Object 999 does not exist in the xref table
+        let key = COSObjectKey(objectNumber: 999, generation: 0)
+        let value = try await parser.getObject(key: key)
+        #expect(value == nil)
     }
 
     // MARK: - Error Handling Tests
@@ -184,18 +195,37 @@ struct PDFDocumentParserTests {
 
     // MARK: - Property Access Tests
 
-    @Test("COSParser conformance provides header access", .disabled("Requires full integration"))
+    @Test("COSParser conformance provides header access")
     func cosParserConformanceProvidesHeaderAccess() async throws {
-        // Would test that header property is accessible via COSParser protocol
+        let pdfData = createMinimalPDF()
+        let stream = DataInputStream(data: pdfData)
+        let parser: any COSParser = try await PDFDocumentParser(stream: stream)
+
+        #expect(parser.header.versionString == "1.7")
+        #expect(parser.header.major == 1)
+        #expect(parser.header.minor == 7)
     }
 
-    @Test("COSParser conformance provides xrefTable access", .disabled("Requires full integration"))
+    @Test("COSParser conformance provides xrefTable access")
     func cosParserConformanceProvidesXRefTableAccess() async throws {
-        // Would test that xrefTable property is accessible via COSParser protocol
+        let pdfData = createMinimalPDF()
+        let stream = DataInputStream(data: pdfData)
+        let parser: any COSParser = try await PDFDocumentParser(stream: stream)
+
+        #expect(parser.xrefTable.subsectionCount == 1)
+        #expect(parser.xrefTable.totalEntryCount == 3)
+        #expect(parser.xrefTable.isInUse(objectNumber: 1))
+        #expect(parser.xrefTable.isInUse(objectNumber: 2))
+        #expect(parser.xrefTable.isFree(objectNumber: 0))
     }
 
-    @Test("COSParser conformance provides trailer access", .disabled("Requires full integration"))
+    @Test("COSParser conformance provides trailer access")
     func cosParserConformanceProvidesTrailerAccess() async throws {
-        // Would test that trailer property is accessible via COSParser protocol
+        let pdfData = createMinimalPDF()
+        let stream = DataInputStream(data: pdfData)
+        let parser: any COSParser = try await PDFDocumentParser(stream: stream)
+
+        #expect(parser.trailer.size == 3)
+        #expect(parser.trailer.rootValue != nil)
     }
 }
