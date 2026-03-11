@@ -66,6 +66,14 @@ public final class PDFTextStripper {
     /// Current text state.
     private var currentTextState: TextState
 
+    /// Cached ToUnicode CMap tables keyed by font name.
+    ///
+    /// Each entry maps character code bytes (UInt8) to Unicode strings.
+    private var toUnicodeMaps: [ASAtom: [UInt8: String]] = [:]
+
+    /// The current page resources (for font lookup).
+    private var currentResources: PDFResources?
+
     // MARK: - Initialization
 
     /// Creates a text stripper with default configuration.
@@ -95,6 +103,9 @@ public final class PDFTextStripper {
     ) async throws -> String {
         // Reset state
         reset()
+
+        // Store resources for font lookup during text extraction
+        currentResources = resources
 
         // Parse content stream
         let inputStream = DataInputStream(data: stream)
@@ -134,6 +145,8 @@ public final class PDFTextStripper {
         graphicsStateStack = []
         currentGraphicsState = GraphicsState()
         currentTextState = TextState()
+        toUnicodeMaps = [:]
+        currentResources = nil
     }
 
     /// Processes a single content stream operator.
@@ -178,6 +191,12 @@ public final class PDFTextStripper {
         case .setFont(let name, let size):
             currentTextState.font = name
             currentTextState.fontSize = size
+            // Load ToUnicode CMap for this font if not already cached
+            if toUnicodeMaps[name] == nil, let resources = currentResources {
+                if let cmap = loadToUnicodeCMap(fontName: name, resources: resources) {
+                    toUnicodeMaps[name] = cmap
+                }
+            }
 
         case .setTextRenderingMode(let mode):
             currentTextState.renderingMode = mode
@@ -239,14 +258,21 @@ public final class PDFTextStripper {
             return
         }
 
-        // For now, do simple byte-to-character conversion
-        // In a full implementation, this would use font encoding and ToUnicode CMap
+        // Retrieve ToUnicode CMap for this font (if available)
+        let cmapTable = toUnicodeMaps[font]
+
         let bytes = Array(data)
 
         for byte in bytes {
-            // Simple ASCII conversion (full implementation would use font encoding)
-            let char = String(UnicodeScalar(byte))
-            let unicode = char // TODO: Apply ToUnicode mapping
+            // Apply ToUnicode CMap mapping if available; otherwise fall back to
+            // a simple byte-to-character conversion using the Unicode scalar value.
+            let unicode: String
+            if let cmap = cmapTable, let mapped = cmap[byte] {
+                unicode = mapped
+            } else {
+                unicode = String(UnicodeScalar(byte))
+            }
+            let char = unicode
 
             // Calculate glyph width
             // Full implementation would look up width from font
@@ -291,6 +317,177 @@ public final class PDFTextStripper {
             // Advance text matrix
             currentTextState.textMatrix = currentTextState.textMatrix.translatedBy(x: totalWidth, y: 0)
         }
+    }
+
+    // MARK: - ToUnicode CMap Support
+
+    /// Loads a ToUnicode CMap table for the named font from page resources.
+    ///
+    /// Returns a mapping from single-byte character codes to Unicode strings, or
+    /// `nil` if the font has no `/ToUnicode` entry or the data cannot be parsed.
+    ///
+    /// - Parameters:
+    ///   - fontName: The resource name of the font (e.g., `F1`).
+    ///   - resources: The page resources containing the font dictionary.
+    /// - Returns: A `[UInt8: String]` mapping, or `nil`.
+    private func loadToUnicodeCMap(
+        fontName: ASAtom,
+        resources: PDFResources
+    ) -> [UInt8: String]? {
+        // Look up the font dictionary in resources
+        guard let fontCOSValue = resources.font(named: fontName) else {
+            return nil
+        }
+
+        // The ToUnicode entry is a stream in a full PDF, but in the current
+        // implementation streams are represented either as a COSString (raw bytes)
+        // or as a dictionary with a /ToUnicode key pointing to stream data.
+        // We check the dictionary entry directly.
+        guard let toUnicodeValue = fontCOSValue[ASAtom("ToUnicode")] else {
+            return nil
+        }
+
+        // Extract the CMap bytes from whatever form they take
+        let cmapData: Data?
+        switch toUnicodeValue {
+        case .string(let cosStr):
+            // Raw CMap bytes stored as a string (unusual but possible)
+            cmapData = cosStr.data
+        case .dictionary(let dict):
+            // The stream's decoded data might be stored under a well-known key;
+            // look for a /StreamData or /DecodedData entry (implementation-specific)
+            if let streamStr = dict[ASAtom("StreamData")]?.stringValue {
+                cmapData = streamStr.data
+            } else {
+                cmapData = nil
+            }
+        default:
+            cmapData = nil
+        }
+
+        guard let data = cmapData else {
+            return nil
+        }
+
+        return parseCMapData(data)
+    }
+
+    /// Parses a ToUnicode CMap byte stream and returns a code-to-Unicode mapping.
+    ///
+    /// Handles the two CMap mapping sections:
+    /// - `beginbfchar` / `endbfchar`: maps individual character codes
+    /// - `beginbfrange` / `endbfrange`: maps ranges of character codes
+    ///
+    /// - Parameter data: The raw CMap program bytes.
+    /// - Returns: A `[UInt8: String]` mapping.
+    private func parseCMapData(_ data: Data) -> [UInt8: String]? {
+        guard let cmapText = String(data: data, encoding: .utf8) ??
+                             String(data: data, encoding: .isoLatin1) else {
+            return nil
+        }
+
+        var mapping: [UInt8: String] = [:]
+
+        // Parse beginbfchar / endbfchar sections
+        // Format: <srcCode> <dstCode> per line
+        // e.g.:  <20> <0020>   maps byte 0x20 -> U+0020
+        for block in extractCMapBlocks(from: cmapText, begin: "beginbfchar", end: "endbfchar") {
+            parseBFCharBlock(block, into: &mapping)
+        }
+
+        // Parse beginbfrange / endbfrange sections
+        // Format: <startCode> <endCode> <dstCode> per line
+        // e.g.:  <41> <5A> <0041>  maps 0x41-0x5A -> U+0041-U+005A
+        for block in extractCMapBlocks(from: cmapText, begin: "beginbfrange", end: "endbfrange") {
+            parseBFRangeBlock(block, into: &mapping)
+        }
+
+        return mapping.isEmpty ? nil : mapping
+    }
+
+    /// Extracts all blocks delimited by `begin` and `end` keywords from CMap text.
+    private func extractCMapBlocks(from text: String, begin: String, end: String) -> [String] {
+        var blocks: [String] = []
+        var searchStart = text.startIndex
+
+        while searchStart < text.endIndex {
+            guard let beginRange = text.range(of: begin, range: searchStart..<text.endIndex) else {
+                break
+            }
+            guard let endRange = text.range(of: end, range: beginRange.upperBound..<text.endIndex) else {
+                break
+            }
+            // Extract the content between begin and end keywords (exclusive)
+            let blockContent = String(text[beginRange.upperBound..<endRange.lowerBound])
+            blocks.append(blockContent)
+            searchStart = endRange.upperBound
+        }
+
+        return blocks
+    }
+
+    /// Parses a `beginbfchar` block and adds entries to the mapping.
+    private func parseBFCharBlock(_ block: String, into mapping: inout [UInt8: String]) {
+        // Each line: <srcHex> <dstHex>
+        let lines = block.components(separatedBy: .newlines)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.contains("<") else { continue }
+
+            let hexValues = extractHexValues(from: trimmed)
+            guard hexValues.count >= 2,
+                  let srcCode = UInt8(exactly: hexValues[0]),
+                  let dstScalar = Unicode.Scalar(hexValues[1]) else {
+                continue
+            }
+
+            mapping[srcCode] = String(dstScalar)
+        }
+    }
+
+    /// Parses a `beginbfrange` block and adds entries to the mapping.
+    private func parseBFRangeBlock(_ block: String, into mapping: inout [UInt8: String]) {
+        // Each line: <startHex> <endHex> <dstHex>
+        let lines = block.components(separatedBy: .newlines)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.contains("<") else { continue }
+
+            let hexValues = extractHexValues(from: trimmed)
+            guard hexValues.count >= 3,
+                  let startCode = UInt8(exactly: hexValues[0]),
+                  let endCode = UInt8(exactly: hexValues[1]) else {
+                continue
+            }
+
+            var dstCode = hexValues[2]
+            for srcCode in startCode...endCode {
+                if let dstScalar = Unicode.Scalar(dstCode) {
+                    mapping[srcCode] = String(dstScalar)
+                }
+                dstCode += 1
+            }
+        }
+    }
+
+    /// Extracts all `<hex>` values from a CMap line as `UInt32` values.
+    private func extractHexValues(from line: String) -> [UInt32] {
+        var values: [UInt32] = []
+        var remaining = line[line.startIndex...]
+
+        while let openAngle = remaining.firstIndex(of: "<") {
+            let afterOpen = remaining.index(after: openAngle)
+            guard let closeAngle = remaining[afterOpen...].firstIndex(of: ">") else {
+                break
+            }
+            let hexStr = String(remaining[afterOpen..<closeAngle])
+            if let value = UInt32(hexStr, radix: 16) {
+                values.append(value)
+            }
+            remaining = remaining[remaining.index(after: closeAngle)...]
+        }
+
+        return values
     }
 
     /// Builds text lines from positions.

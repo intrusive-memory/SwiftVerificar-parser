@@ -30,7 +30,7 @@ SwiftVerificarParser is a Swift port of [veraPDF-parser](https://github.com/vera
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/intrusive-memory/SwiftVerificar-parser.git", from: "0.1.0")
+    .package(url: "https://github.com/intrusive-memory/SwiftVerificar-parser.git", from: "0.2.0")
 ]
 ```
 
