@@ -471,7 +471,7 @@ struct ObjectParserTests {
 
     // MARK: - Complex Nested Structures
 
-    @Test("Parse complex nested structure", .disabled("Indirect references in arrays not implemented in v0.1.0"))
+    @Test("Parse complex nested structure")
     func parseComplexNestedStructure() async throws {
         let data = Data("""
         <<

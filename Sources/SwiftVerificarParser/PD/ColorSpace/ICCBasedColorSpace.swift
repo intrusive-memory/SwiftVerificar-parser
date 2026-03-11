@@ -41,11 +41,16 @@ public struct ICCBasedColorSpace: PDFColorSpace, Sendable, Hashable {
 
     /// Creates an ICCBased color space from a COS array.
     ///
-    /// - Parameter cosObject: Array of the form `[/ICCBased streamDict]`.
+    /// - Parameter cosObject: Array of the form `[/ICCBased streamOrRef]`.
     /// - Throws: `PDError` if the array format is invalid.
     ///
-    /// Note: In the current implementation, the stream is represented as a dictionary
-    /// containing the stream parameters. Full stream decoding will be added later.
+    /// The second array element may be:
+    /// - A dictionary (inline stream dictionary with /N, /Alternate, /Range entries)
+    /// - An indirect reference to a stream object — when a reference is provided,
+    ///   the stream cannot be resolved without a document context, so the color space
+    ///   is created with a default of 3 components (sRGB-like) and no alternate space.
+    ///   Callers with document access should resolve the reference first and pass the
+    ///   resolved stream dictionary instead.
     public init(cosObject: COSValue) throws {
         self.cosObject = cosObject
 
@@ -53,40 +58,49 @@ public struct ICCBasedColorSpace: PDFColorSpace, Sendable, Hashable {
             throw PDError.invalidColorSpace
         }
 
-        // The second element should be a dictionary (stream dictionary)
-        guard case .dictionary(let streamDict) = array[1] else {
-            throw PDError.invalidColorSpace
-        }
-
-        // Parse /N (required) - number of components
-        guard let nValue = streamDict[.n],
-              let n = nValue.asInteger,
-              [1, 3, 4].contains(n) else {
-            throw PDError.missingRequiredEntry(key: "N")
-        }
-        self.numberOfComponentsValue = n
-
-        // Parse /Alternate (optional)
-        if let altValue = streamDict[.alternate] {
-            self.alternateColorSpace = try? PDFColorSpaceFactory.create(from: altValue)
-        } else {
-            self.alternateColorSpace = nil
-        }
-
-        // Parse /Range (optional)
-        if let rangeValue = streamDict[.range],
-           case .array(let rangeArray) = rangeValue,
-           rangeArray.count == n * 2 {
-            var parsedRanges: [ClosedRange<Double>] = []
-            for i in 0..<n {
-                if case .real(let min) = rangeArray[i * 2].asNumber,
-                   case .real(let max) = rangeArray[i * 2 + 1].asNumber {
-                    parsedRanges.append(min...max)
-                }
+        // The second element may be a stream dictionary or an indirect reference.
+        switch array[1] {
+        case .dictionary(let streamDict):
+            // Inline stream dictionary: parse /N, /Alternate, /Range
+            guard let nValue = streamDict[.n],
+                  let n = nValue.asInteger,
+                  [1, 3, 4].contains(n) else {
+                throw PDError.missingRequiredEntry(key: "N")
             }
-            self.range = parsedRanges.count == n ? parsedRanges : nil
-        } else {
+            self.numberOfComponentsValue = n
+
+            if let altValue = streamDict[.alternate] {
+                self.alternateColorSpace = try? PDFColorSpaceFactory.create(from: altValue)
+            } else {
+                self.alternateColorSpace = nil
+            }
+
+            if let rangeValue = streamDict[.range],
+               case .array(let rangeArray) = rangeValue,
+               rangeArray.count == n * 2 {
+                var parsedRanges: [ClosedRange<Double>] = []
+                for i in 0..<n {
+                    if case .real(let min) = rangeArray[i * 2].asNumber,
+                       case .real(let max) = rangeArray[i * 2 + 1].asNumber {
+                        parsedRanges.append(min...max)
+                    }
+                }
+                self.range = parsedRanges.count == n ? parsedRanges : nil
+            } else {
+                self.range = nil
+            }
+
+        case .reference:
+            // Indirect reference to a stream object. Without a document context we
+            // cannot resolve the reference here. Use a safe default (3 components,
+            // no alternate, no range) so that objects can be created and the
+            // reference recorded for deferred resolution by the document layer.
+            self.numberOfComponentsValue = 3
+            self.alternateColorSpace = nil
             self.range = nil
+
+        default:
+            throw PDError.invalidColorSpace
         }
     }
 

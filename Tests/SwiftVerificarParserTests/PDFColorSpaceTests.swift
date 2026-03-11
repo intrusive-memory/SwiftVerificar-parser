@@ -85,7 +85,7 @@ struct PDFColorSpaceTests {
         #expect(colorSpace is LabColorSpace)
     }
 
-    @Test("Create ICCBased from array", .disabled("ICCBased from reference not implemented in v0.1.0"))
+    @Test("Create ICCBased from array")
     func createICCBasedFromArray() throws {
         // ICCBased color spaces in PDFs typically use a reference to a stream
         // For testing, we'll use a dictionary that represents the stream's properties
